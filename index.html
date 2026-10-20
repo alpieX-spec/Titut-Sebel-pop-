@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Titut Sebel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>😤</text></svg>">
+<style>
+:root{--bg:#f4f4f4;color-scheme:light dark}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#111}}
+:root[data-theme="dark"]{--bg:#111}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg)}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+@supports (height:100dvh){.stage{height:100dvh}}
+.stage img{width:100%;height:100%;object-fit:contain;display:block;cursor:pointer;-webkit-user-drag:none}
+.stage.fill img{object-fit:cover}
+
+.pill{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;height:40px;padding:0 20px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:5}
+.pill b{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;min-width:1ch;text-align:center}
+.pill.bump{animation:bump .18s ease-out}
+@keyframes bump{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.18)}100%{transform:translateX(-50%) scale(1)}}
+@media (prefers-reduced-motion:reduce){.pill.bump{animation:none}}
+
+.me{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;height:40px;display:flex;align-items:center;max-width:32vw;padding:0 14px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font:600 14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;pointer-events:none;z-index:5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me:empty{display:none}
+
+.lb-btn{position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);width:40px;height:40px;border:0;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font-size:20px;line-height:1;cursor:pointer;z-index:5}
+.mode{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);padding:8px 14px;border:0;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font:600 13px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;cursor:pointer;z-index:5}
+.lb-btn:focus-visible,.lb-close:focus-visible,.mode:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+.lb{position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 62px);width:min(380px,calc(100% - 24px));max-height:min(60%,460px);overflow-y:auto;padding:14px 16px;border-radius:18px;background:rgba(0,0,0,.88);color:#fff;font:500 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;z-index:6;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.lb[hidden]{display:none}
+.lb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:16px}
+.lb-close{border:0;background:transparent;color:#fff;font-size:18px;cursor:pointer;padding:2px 6px}
+.row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px}
+.row.you{background:rgba(255,255,255,.16)}
+.row .rk{width:2.2em;text-align:right;opacity:.7;font-variant-numeric:tabular-nums}
+.row .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .ct{font-weight:800;font-variant-numeric:tabular-nums}
+.lb-note{margin-top:8px;font-size:12.5px;opacity:.75;line-height:1.4}
+.lb-note:empty{display:none}
+</style>
+</head>
+<body>
+<div class="stage" id="stage"><img src="titut_sebel.jpg" alt="Titut sebel" draggable="false"></div>
+<div class="pill" id="pill"><b id="count">0</b></div>
+<div class="me" id="me"></div>
+<button class="lb-btn" id="lbBtn" type="button" aria-label="Buka leaderboard">&#127942;</button>
+<button class="mode" id="mode" type="button">Isi penuh</button>
+<div class="lb" id="lb" hidden>
+  <div class="lb-head"><strong>Leaderboard</strong><button class="lb-close" id="lbClose" type="button" aria-label="Tutup">&#10005;</button></div>
+  <div id="lbList"></div>
+  <p class="lb-note" id="lbNote"></p>
+</div>
+
+<script>
+/* ====== ISI DUA BARIS INI SETELAH MEMBUAT PROJECT SUPABASE ====== */
+var SUPABASE_URL = 'https://titutsebel.supabase.co';       // contoh: https://abcdxyz.supabase.co
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHBzaWRyYXJ4eGlocmVibGtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0NzkxMTIsImV4cCI6MjEwODA1NTExMn0.lDhHg9U_KhwRJHsspQgfKRBmd0pOw6P1YmDc3orCo2Y';       // anon key / publishable key (aman dipublikasikan)
+/* ================================================================ */
+
+var $ = function(id){ return document.getElementById(id); };
+var stage=$('stage'), pill=$('pill'), countEl=$('count'), meEl=$('me'),
+    lb=$('lb'), lbList=$('lbList'), lbNote=$('lbNote');
+
+var configured = !!(SUPABASE_URL && SUPABASE_KEY);
+var token = getToken();
+var myName = '';
+var confirmed = 0, pending = 0;
+var registered = false, inflight = false, flushTimer = null;
+
+/* ---------- util ---------- */
+function getToken(){
+  var K='titut_token', t=null;
+  try{ t=localStorage.getItem(K); }catch(e){}
+  if(!t){
+    if(window.crypto && crypto.randomUUID){ t=crypto.randomUUID(); }
+    else{
+      var a=new Uint8Array(16); crypto.getRandomValues(a);
+      a[6]=(a[6]&15)|64; a[8]=(a[8]&63)|128;
+      var h=Array.prototype.map.call(a,function(x){return ('0'+x.toString(16)).slice(-2)}).join('');
+      t=h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);
+    }
+    try{ localStorage.setItem(K,t); }catch(e){}
+  }
+  return t;
+}
+function rpc(fn,args){
+  var headers={'Content-Type':'application/json',apikey:SUPABASE_KEY};
+  if(SUPABASE_KEY.indexOf('eyJ')===0) headers.Authorization='Bearer '+SUPABASE_KEY;
+  return fetch(SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{
+    method:'POST',headers:headers,body:JSON.stringify(args||{}),keepalive:true
+  }).then(function(r){
+    if(!r.ok) throw new Error(fn+' '+r.status);
+    return r.json();
+  });
+}
+function note(t){ lbNote.textContent=t||''; }
+function fmt(v){ return (Number(v)||0).toLocaleString('id-ID'); }
+function render(){ countEl.textContent=fmt(confirmed+pending); }
+
+/* ---------- suara ---------- */
+var AC=window.AudioContext||window.webkitAudioContext, ac=null, buf=null;
+try{
+  ac=new AC();
+  fetch('klik.mp3').then(function(r){return r.arrayBuffer()})
+    .then(function(ab){return ac.decodeAudioData(ab)})
+    .then(function(b){buf=b}).catch(function(){});
+}catch(e){}
+function playSound(){
+  try{
+    if(ac&&buf){
+      if(ac.state==='suspended') ac.resume();
+      var s=ac.createBufferSource(); s.buffer=buf; s.connect(ac.destination); s.start(0);
+    }else{
+      new Audio('klik.mp3').play().catch(function(){});
+    }
+  }catch(e){}
+}
+
+/* ---------- klik ---------- */
+stage.addEventListener('click',function(){
+  playSound();
+  pending++; render();
+  pill.classList.remove('bump'); void pill.offsetWidth; pill.classList.add('bump');
+  scheduleFlush();
+});
+$('mode').addEventListener('click',function(){
+  stage.classList.toggle('fill');
+  this.textContent=stage.classList.contains('fill')?'Pas layar':'Isi penuh';
+});
+
+/* ---------- sinkron ke server ---------- */
+function scheduleFlush(){
+  if(flushTimer||!configured) return;
+  flushTimer=setTimeout(function(){ flushTimer=null; flush(); },1000);
+}
+function flush(){
+  if(!registered||inflight||pending<=0) return;
+  var d=pending; inflight=true;
+  rpc('add_clicks',{p_token:token,p_delta:d}).then(function(res){
+    if(res!==null&&res!==undefined){ pending-=d; confirmed=Number(res)||0; }
+  }).catch(function(){}).then(function(){
+    inflight=false; render();
+    if(pending>0) scheduleFlush();
+  });
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){ if(flushTimer){clearTimeout(flushTimer);flushTimer=null;} flush(); }
+});
+
+function init(){
+  if(!configured){
+    note('Leaderboard belum aktif: isi SUPABASE_URL dan SUPABASE_KEY di index.html.');
+    return;
+  }
+  rpc('register_player',{p_token:token}).then(function(rows){
+    var me=rows&&rows[0]; if(!me) throw new Error('empty');
+    registered=true; myName=me.player_name; confirmed=Number(me.player_clicks)||0;
+    meEl.textContent=myName; render();
+    if(pending>0) scheduleFlush();
+    if(!lb.hidden) refreshBoard();
+  }).catch(function(){
+    note('Belum terhubung ke server. Mencoba lagi...');
+    setTimeout(init,8000);
+  });
+}
+
+/* ---------- leaderboard ---------- */
+function rowEl(pos,name,clicks,mine){
+  var r=document.createElement('div'); r.className='row'+(mine?' you':'');
+  var a=document.createElement('span'); a.className='rk'; a.textContent=pos;
+  var b=document.createElement('span'); b.className='nm'; b.textContent=String(name||'titut');
+  var c=document.createElement('span'); c.className='ct'; c.textContent=fmt(clicks);
+  r.appendChild(a); r.appendChild(b); r.appendChild(c);
+  return r;
+}
+function refreshBoard(){
+  if(!configured) return;
+  Promise.all([
+    rpc('get_leaderboard',{p_limit:10}),
+    registered?rpc('get_my_rank',{p_token:token}):Promise.resolve([])
+  ]).then(function(res){
+    var top=res[0]||[], me=(res[1]||[])[0];
+    lbList.textContent='';
+    top.forEach(function(r){ lbList.appendChild(rowEl(r.pos,r.player_name,r.player_clicks,r.player_name===myName)); });
+    if(me&&Number(me.pos)>10) lbList.appendChild(rowEl(me.pos,me.player_name,me.player_clicks,true));
+    note(top.length?'':'Belum ada pemain. Klik gambarnya!');
+  }).catch(function(){ note('Leaderboard tidak bisa dimuat.'); });
+}
+var boardTimer=null;
+function setBoardOpen(open){
+  lb.hidden=!open;
+  clearInterval(boardTimer);
+  if(open){ refreshBoard(); boardTimer=setInterval(function(){ if(!document.hidden) refreshBoard(); },5000); }
+}
+$('lbBtn').addEventListener('click',function(){ setBoardOpen(lb.hidden); });
+$('lbClose').addEventListener('click',function(){ setBoardOpen(false); });
+
+render();
+init();
+</script>
+</body>
+</html>
